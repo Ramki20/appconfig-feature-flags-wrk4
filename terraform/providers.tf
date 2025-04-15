@@ -7,10 +7,10 @@ terraform {
   }
   
   backend "s3" {
-    bucket         = "ramki20-terraform-state-appconfig2"
+    bucket         = "ramki20-terraform-state-appconfig4"
     key            = "feature-flags/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "ramki20-terraform-state-locks2"
+    dynamodb_table = "ramki20-terraform-state-locks4"
     encrypt        = true
   }
 }
