@@ -103,8 +103,6 @@ resource "terraform_data" "config_hash_tracker" {
   # Use only meaningful content hash as input to trigger changes
   input = local.meaningful_content_hash[each.key]
   
-  # Output the hash for reference in outputs
-  output = local.meaningful_content_hash[each.key]
 }
 
 # Comprehensive debug for fixed content including attributes and metadata
@@ -160,9 +158,9 @@ EOT
   # Add lifecycle configuration to prevent unnecessary updates
   lifecycle {
     # Only replace when the meaningful content hash changes
-    replace_triggered_by = [
-      terraform_data.config_hash_tracker[each.key]
-    ]
+	replace_triggered_by = [
+      terraform_data.config_hash_tracker[each.key].id
+    ]    
     
     # Ignore changes to content since we're controlling replacement with the hash tracker
     ignore_changes = [

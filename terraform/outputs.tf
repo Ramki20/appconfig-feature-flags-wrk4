@@ -32,7 +32,7 @@ output "hosted_configuration_versions" {
 
 output "content_hashes" {
   description = "Map of meaningful content hashes for each configuration"
-  value       = { for name, hash in terraform_data.config_hash_tracker : name => hash.output }
+  value       = { for name, tracker in terraform_data.config_hash_tracker : name => local.meaningful_content_hash[name] }
 }
 
 # Removed deployment_ids and deployment_statuses outputs
