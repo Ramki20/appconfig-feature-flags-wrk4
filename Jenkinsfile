@@ -16,7 +16,7 @@ pipeline {
     
     parameters {
         choice(name: 'DEPLOYMENT_MODE', choices: ['all', 'single'], description: 'Deploy all config files or a single one')
-        string(name: 'CONFIG_FILE', defaultValue: 'tst2_feature_flags.json', description: 'Name of the feature flags JSON file (used only when DEPLOYMENT_MODE is "single")')
+        string(name: 'CONFIG_FILE', defaultValue: 'example4_feature_flags.json', description: 'Name of the feature flags JSON file (used only when DEPLOYMENT_MODE is "single")')
         booleanParam(name: 'MERGE_CONFIGS', defaultValue: true, description: 'Merge with existing AppConfig instead of overwriting')
     }
     
