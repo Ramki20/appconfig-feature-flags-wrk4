@@ -3,6 +3,9 @@
     "dbsa_servicing_navigation": {
       "name": "dbsa_servicing_navigation"
     },
+	"dbsa_servicing_navigation2": {
+	  "name": "dbsa_servicing_navigation2"
+	},
     "valid_auth_ids": {
       "name": "valid_auth_ids",
       "attributes": {
@@ -19,6 +22,9 @@
     "dbsa_servicing_navigation": {
       "enabled": true
     },
+	"dbsa_servicing_navigation2": {
+	  "enabled": false
+	},
     "valid_auth_ids": {
       "enabled": true,
       "allowed_ids": [
