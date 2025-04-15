@@ -30,4 +30,9 @@ output "hosted_configuration_versions" {
   value       = { for idx, version in aws_appconfig_hosted_configuration_version.feature_flags_version : aws_appconfig_application.feature_flags_app[idx].name => version.version_number }
 }
 
+output "content_hashes" {
+  description = "Map of meaningful content hashes for each configuration"
+  value       = { for name, hash in terraform_data.config_hash_tracker : name => hash.output }
+}
+
 # Removed deployment_ids and deployment_statuses outputs

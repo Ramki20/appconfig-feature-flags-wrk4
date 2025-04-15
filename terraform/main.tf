@@ -25,6 +25,18 @@ locals {
       values  = jsondecode(file(path)).values
     }
   }
+  
+  # Generate a hash of meaningful content (excluding timestamps)
+  meaningful_content_hash = {
+    for name, content in local.fixed_contents : name => sha256(jsonencode({
+      flags = content.flags,
+      values_without_timestamps = {
+        for flag_name, flag_values in content.values : flag_name => {
+          for k, v in flag_values : k => v if !startswith(k, "_")
+        }
+      }
+    }))
+  }
 }
 
 # AWS AppConfig Deployment Strategy (shared across all deployments)
@@ -84,6 +96,17 @@ resource "aws_appconfig_configuration_profile" "feature_flags_profile" {
   }
 }
 
+# Track meaningful changes to configuration content
+resource "terraform_data" "config_hash_tracker" {
+  for_each = local.config_files
+  
+  # Use only meaningful content hash as input to trigger changes
+  input = local.meaningful_content_hash[each.key]
+  
+  # Output the hash for reference in outputs
+  output = local.meaningful_content_hash[each.key]
+}
+
 # Comprehensive debug for fixed content including attributes and metadata
 resource "terraform_data" "debug_fixed_content" {
   for_each = local.fixed_contents
@@ -110,6 +133,8 @@ resource "terraform_data" "debug_fixed_content" {
         }
       }
     }
+    # Add meaningful content hash for debugging
+    meaningful_content_hash = local.meaningful_content_hash[each.key]
   }
 }
 
@@ -132,6 +157,18 @@ resource "aws_appconfig_hosted_configuration_version" "feature_flags_version" {
 }
 EOT
 
+  # Add lifecycle configuration to prevent unnecessary updates
+  lifecycle {
+    # Only replace when the meaningful content hash changes
+    replace_triggered_by = [
+      terraform_data.config_hash_tracker[each.key]
+    ]
+    
+    # Ignore changes to content since we're controlling replacement with the hash tracker
+    ignore_changes = [
+      content
+    ]
+  }
 }
 
 # Note: Deployment resource has been removed to allow deployment through Angular UI instead
