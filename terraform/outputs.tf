@@ -11,7 +11,7 @@ output "environment_ids" {
 output "debug_fixed_content" {
   description = "Detailed debug information about fixed content including attributes and metadata"
   value = {
-    for k, v in terraform_data.debug_fixed_content : k => jsondecode(jsonencode(v.output))
+    for k, v in terraform_data.debug_fixed_content : k => jsondecode(jsonencode(v.input))
   }
 }
 
@@ -32,7 +32,7 @@ output "hosted_configuration_versions" {
 
 output "content_hashes" {
   description = "Map of meaningful content hashes for each configuration"
-  value       = { for name, tracker in terraform_data.config_hash_tracker : name => local.meaningful_content_hash[name] }
+  value       = { for name, hash in local.meaningful_content_hash : name => hash }
 }
 
 # Removed deployment_ids and deployment_statuses outputs

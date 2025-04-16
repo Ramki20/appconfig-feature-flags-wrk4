@@ -102,7 +102,6 @@ resource "terraform_data" "config_hash_tracker" {
   
   # Use only meaningful content hash as input to trigger changes
   input = local.meaningful_content_hash[each.key]
-  
 }
 
 # Comprehensive debug for fixed content including attributes and metadata
@@ -146,25 +145,21 @@ resource "aws_appconfig_hosted_configuration_version" "feature_flags_version" {
     
   content_type             = "application/json"
     
-  # Use raw JSON format with direct interpolation and version as a string
-  content = <<-EOT
-{
-  "flags": ${jsonencode(local.fixed_contents[each.key].flags)},
-  "values": ${jsonencode(local.fixed_contents[each.key].values)},
-  "version": "1"
-}
-EOT
-
-  # Add lifecycle configuration to prevent unnecessary updates
+  # Use a version of the content that strips out timestamp metadata
+  content = jsonencode({
+    flags = local.fixed_contents[each.key].flags,
+    values = {
+      for flag_name, flag_values in local.fixed_contents[each.key].values : flag_name => {
+        for k, v in flag_values : k => v if !startswith(k, "_")
+      }
+    },
+    version = "1"
+  })
+  
+  # Use replace_triggered_by without ignore_changes
   lifecycle {
-    # Only replace when the meaningful content hash changes
-	replace_triggered_by = [
+    replace_triggered_by = [
       terraform_data.config_hash_tracker[each.key].id
-    ]    
-    
-    # Ignore changes to content since we're controlling replacement with the hash tracker
-    ignore_changes = [
-      content
     ]
   }
 }
