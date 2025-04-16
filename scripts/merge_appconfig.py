@@ -174,8 +174,12 @@ def create_merged_config(github_config, aws_config, current_version):
         else:
             # For new flags not in AWS AppConfig, use default values from GitHub
             logger.info(f"Adding new flag with default values: {flag_name}")
-            merged_config["values"][flag_name] = github_config["values"].get(flag_name, {"enabled": "false"}).copy()
-
+            if flag_name in github_config.get("values", {}):
+                # Use values from GitHub config if available
+                merged_config["values"][flag_name] = github_config["values"].get(flag_name, {"enabled": False}).copy()
+            else:
+                # Otherwise use default value
+                merged_config["values"][flag_name] = {"enabled": False}
 
     logger.info(f"merged_config-2: {merged_config}")
     
@@ -224,15 +228,15 @@ def check_if_file_changed(output_path, merged_config):
     if not os.path.exists(output_path):
         logger.info(f"Output file {output_path} doesn't exist yet")
         return True
-        
-    try:
+
+  	try:
         with open(output_path, 'r') as f:
             existing_content = json.load(f)
             
-        logger.info(f"Found existing_content: {existing_content}")
+        logger.debug(f"Found existing_content: {existing_content}")
         
         # Compare only the structure (flags and their attributes)
-        # without comparing values or metadata
+        # without comparing values, metadata or timestamps
         existing_flags = set(existing_content.get("flags", {}).keys())
         merged_flags = set(merged_config.get("flags", {}).keys())
         
@@ -252,12 +256,26 @@ def check_if_file_changed(output_path, merged_config):
             if set(merged_attrs.keys()) != set(existing_attrs.keys()):
                 logger.info(f"Attributes for flag {flag_name} are different")
                 return True
+                
+        # Check for actual value changes (excluding timestamps)
+        for flag_name in merged_flags:
+            # Skip timestamp comparisons
+            merged_values = merged_config["values"].get(flag_name, {})
+            existing_values = existing_content["values"].get(flag_name, {})
+            
+            # Create copies without timestamp metadata
+            merged_copy = {k: v for k, v in merged_values.items() if not k.startswith('_')}
+            existing_copy = {k: v for k, v in existing_values.items() if not k.startswith('_')}
+            
+            if merged_copy != existing_copy:
+                logger.info(f"Values for flag {flag_name} have changed (ignoring timestamps)")
+                return True
         
-        logger.info("No structural changes detected in configuration")
+        logger.info("No significant changes detected in configuration")
         return False
     except Exception as e:
         logger.warning(f"Error checking existing file: {str(e)}")
-        return True
+        return True        
 
 def write_output_file(content, output_path):
     """Write merged configuration to output file"""

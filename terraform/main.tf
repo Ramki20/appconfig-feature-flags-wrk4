@@ -137,13 +137,12 @@ resource "terraform_data" "debug_fixed_content" {
 
 # Hosted Configuration Version for each configuration profile
 resource "aws_appconfig_hosted_configuration_version" "feature_flags_version" {
-  for_each      = local.config_files
+  for_each = local.config_files
     
-  application_id           = aws_appconfig_application.feature_flags_app[each.key].id
+  application_id = aws_appconfig_application.feature_flags_app[each.key].id
   configuration_profile_id = aws_appconfig_configuration_profile.feature_flags_profile[each.key].configuration_profile_id
-  description              = "Feature flags version ${var.config_version}"
-    
-  content_type             = "application/json"
+  description = "Feature flags version ${var.config_version}"
+  content_type = "application/json"
     
   # Use a version of the content that strips out timestamp metadata
   content = jsonencode({
@@ -156,7 +155,7 @@ resource "aws_appconfig_hosted_configuration_version" "feature_flags_version" {
     version = "1"
   })
   
-  # Use replace_triggered_by without ignore_changes
+  # Keep the lifecycle configuration to trigger on meaningful changes
   lifecycle {
     replace_triggered_by = [
       terraform_data.config_hash_tracker[each.key].id
