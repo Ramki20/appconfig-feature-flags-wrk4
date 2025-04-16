@@ -228,8 +228,8 @@ def check_if_file_changed(output_path, merged_config):
     if not os.path.exists(output_path):
         logger.info(f"Output file {output_path} doesn't exist yet")
         return True
-
-  	try:
+        
+    try:
         with open(output_path, 'r') as f:
             existing_content = json.load(f)
             
