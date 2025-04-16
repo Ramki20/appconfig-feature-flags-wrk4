@@ -1,11 +1,11 @@
 output "application_ids" {
   description = "Map of AWS AppConfig Application IDs"
-  value       = { for idx, app in aws_appconfig_application.feature_flags_app : app.name => app.id }
+  value       = { for key, app in aws_appconfig_application.feature_flags_app : app.name => app.id }
 }
 
 output "environment_ids" {
   description = "Map of AWS AppConfig Environment IDs"
-  value       = { for idx, env in aws_appconfig_environment.feature_flags_env : aws_appconfig_application.feature_flags_app[idx].name => env.id }
+  value       = { for key, env in aws_appconfig_environment.feature_flags_env : aws_appconfig_application.feature_flags_app[key].name => env.id }
 }
 
 output "debug_fixed_content" {
@@ -17,7 +17,7 @@ output "debug_fixed_content" {
 
 output "configuration_profile_ids" {
   description = "Map of AWS AppConfig Configuration Profile IDs"
-  value       = { for idx, profile in aws_appconfig_configuration_profile.feature_flags_profile : aws_appconfig_application.feature_flags_app[idx].name => profile.id }
+  value       = { for key, profile in aws_appconfig_configuration_profile.feature_flags_profile : aws_appconfig_application.feature_flags_app[key].name => profile.id }
 }
 
 output "deployment_strategy_id" {
@@ -27,12 +27,12 @@ output "deployment_strategy_id" {
 
 output "hosted_configuration_versions" {
   description = "Map of AWS AppConfig Configuration Version Numbers"
-  value       = { for idx, version in aws_appconfig_hosted_configuration_version.feature_flags_version : aws_appconfig_application.feature_flags_app[idx].name => version.version_number }
+  value       = { for key, version in aws_appconfig_hosted_configuration_version.feature_flags_version : aws_appconfig_application.feature_flags_app[key].name => version.version_number }
 }
 
-output "content_hashes" {
-  description = "Map of meaningful content hashes for each configuration"
-  value       = { for name, hash in local.meaningful_content_hash : name => hash }
+output "clean_content" {
+  description = "Clean content for each configuration (without timestamps)"
+  value       = { for name, content in local.clean_content : name => content }
 }
 
 # Removed deployment_ids and deployment_statuses outputs

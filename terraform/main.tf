@@ -23,19 +23,22 @@ locals {
     for name, path in local.config_content_paths : name => {
       flags   = jsondecode(file(path)).flags
       values  = jsondecode(file(path)).values
-    }
-  }
-  
-  # Generate a hash of meaningful content (excluding timestamps)
-  meaningful_content_hash = {
-    for name, content in local.fixed_contents : name => sha256(jsonencode({
-      flags = content.flags,
-      values_without_timestamps = {
-        for flag_name, flag_values in content.values : flag_name => {
+      # Create a "clean" version without timestamps
+      clean_values = {
+        for flag_name, flag_values in jsondecode(file(path)).values : flag_name => {
           for k, v in flag_values : k => v if !startswith(k, "_")
         }
       }
-    }))
+    }
+  }
+  
+  # Create a cleaner version of the content for comparison
+  clean_content = {
+    for name, content in local.fixed_contents : name => jsonencode({
+      flags = content.flags,
+      values = content.clean_values,
+      version = "1"
+    })
   }
 }
 
@@ -96,12 +99,12 @@ resource "aws_appconfig_configuration_profile" "feature_flags_profile" {
   }
 }
 
-# Track meaningful changes to configuration content
-resource "terraform_data" "config_hash_tracker" {
+# Track if actual content has changed
+resource "terraform_data" "content_change_detector" {
   for_each = local.config_files
   
-  # Use only meaningful content hash as input to trigger changes
-  input = local.meaningful_content_hash[each.key]
+  # Input is the clean content without timestamps
+  input = local.clean_content[each.key]
 }
 
 # Comprehensive debug for fixed content including attributes and metadata
@@ -130,8 +133,8 @@ resource "terraform_data" "debug_fixed_content" {
         }
       }
     }
-    # Add meaningful content hash for debugging
-    meaningful_content_hash = local.meaningful_content_hash[each.key]
+    # Add clean content hash for debugging
+    clean_content = local.clean_content[each.key]
   }
 }
 
@@ -144,21 +147,19 @@ resource "aws_appconfig_hosted_configuration_version" "feature_flags_version" {
   description = "Feature flags version ${var.config_version}"
   content_type = "application/json"
     
-  # Use a version of the content that strips out timestamp metadata
-  content = jsonencode({
-    flags = local.fixed_contents[each.key].flags,
-    values = {
-      for flag_name, flag_values in local.fixed_contents[each.key].values : flag_name => {
-        for k, v in flag_values : k => v if !startswith(k, "_")
-      }
-    },
-    version = "1"
-  })
+  # Include the full content with timestamps
+  content = <<-EOT
+{
+  "flags": ${jsonencode(local.fixed_contents[each.key].flags)},
+  "values": ${jsonencode(local.fixed_contents[each.key].values)},
+  "version": "1"
+}
+EOT
   
-  # Keep the lifecycle configuration to trigger on meaningful changes
+  # Update only when clean content changes
   lifecycle {
     replace_triggered_by = [
-      terraform_data.config_hash_tracker[each.key].id
+      terraform_data.content_change_detector[each.key].id
     ]
   }
 }
